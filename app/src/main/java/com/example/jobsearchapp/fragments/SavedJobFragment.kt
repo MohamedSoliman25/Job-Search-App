@@ -1,60 +1,97 @@
 package com.example.jobsearchapp.fragments
 
+import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.Toast
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.jobsearchapp.MainActivity
 import com.example.jobsearchapp.R
+import com.example.jobsearchapp.adapters.FavouriteJobAdapter
+import com.example.jobsearchapp.databinding.FragmentJobDetailsViewsBinding
+import com.example.jobsearchapp.databinding.FragmentSavedJobBinding
+import com.example.jobsearchapp.models.FavouriteJob
+import com.example.jobsearchapp.viewmodel.RemoteJobViewModel
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
 
-/**
- * A simple [Fragment] subclass.
- * Use the [SavedJobFragment.newInstance] factory method to
- * create an instance of this fragment.
- */
-class SavedJobFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
+class SavedJobFragment : Fragment(R.layout.fragment_saved_job),FavouriteJobAdapter.ItemClick {
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
+    private val TAG = "SavedJobFragment"
+    private  var _binding: FragmentSavedJobBinding? = null
+    private val binding get() = _binding!!
+
+    private lateinit var viewModel:RemoteJobViewModel
+    private lateinit var favAdapter: FavouriteJobAdapter
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_saved_job, container, false)
+        _binding = FragmentSavedJobBinding.inflate(inflater,container,false)
+        return binding.root
     }
 
-    companion object {
-        /**
-         * Use this factory method to create a new instance of
-         * this fragment using the provided parameters.
-         *
-         * @param param1 Parameter 1.
-         * @param param2 Parameter 2.
-         * @return A new instance of fragment SavedJobFragment.
-         */
-        // TODO: Rename and change types and number of parameters
-        @JvmStatic
-        fun newInstance(param1: String, param2: String) =
-            SavedJobFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM1, param1)
-                    putString(ARG_PARAM2, param2)
-                }
-            }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        viewModel = (activity as MainActivity).mainViewModel
+        setUpRecyclerView()
     }
+
+    private fun setUpRecyclerView() {
+        favAdapter = FavouriteJobAdapter(this)
+        binding.rvJobsSaved.apply {
+            layoutManager = LinearLayoutManager(activity)
+            setHasFixedSize(true)
+            addItemDecoration(object :DividerItemDecoration(
+                    activity,LinearLayout.VERTICAL) {})
+            adapter = favAdapter
+        }
+        viewModel.getAllFavJobs().observe(viewLifecycleOwner, { jobToSave ->
+            favAdapter.differ.submitList(jobToSave)
+            updateUI(jobToSave)
+        })
+    }
+
+    private fun updateUI(favJob: List<FavouriteJob>) {
+
+        if (favJob.isNotEmpty()){
+            binding.rvJobsSaved.visibility = View.VISIBLE
+            binding.cardNoAvailable.visibility = View.GONE
+        }
+        else{
+            binding.rvJobsSaved.visibility = View.GONE
+            binding.cardNoAvailable.visibility = View.VISIBLE
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        _binding = null
+    }
+
+    override fun onItemClick(job: FavouriteJob, view: View, position: Int) {
+        deleteJob(job)
+    }
+
+    private fun deleteJob(job: FavouriteJob) {
+        AlertDialog.Builder(activity).apply {
+            setTitle("Delete Job")
+            setMessage("Are you want to permanently delete this job?")
+            setPositiveButton("DELETE"){_,_->
+                viewModel.deleteJob(job)
+                Toast.makeText(activity,"job deleted",Toast.LENGTH_LONG).show()
+            }
+            setNegativeButton("CANCEL",null)
+        }.create().show()
+    }
+
 }

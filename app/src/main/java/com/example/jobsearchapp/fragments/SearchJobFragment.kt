@@ -1,10 +1,13 @@
 package com.example.jobsearchapp.fragments
 
+import android.os.Build
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.core.widget.addTextChangedListener
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.jobsearchapp.MainActivity
@@ -12,6 +15,7 @@ import com.example.jobsearchapp.R
 import com.example.jobsearchapp.adapters.RemoteJobAdapter
 import com.example.jobsearchapp.databinding.FragmentSavedJobBinding
 import com.example.jobsearchapp.databinding.FragmentSearchJobBinding
+import com.example.jobsearchapp.utils.Constants
 import com.example.jobsearchapp.viewmodel.RemoteJobViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -34,14 +38,18 @@ class SearchJobFragment : Fragment(R.layout.fragment_search_job) {
         _binding = FragmentSearchJobBinding.inflate(inflater,container,false)
         return binding.root
     }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         //Shared view model
         viewModel = (activity as MainActivity).mainViewModel
-        searchJob()
-        setUpRecyclerView()
+        if(Constants.isNetworkAvailable(requireContext())) {
+            searchJob()
+            setUpRecyclerView()
+        }
+        else{
+            Toast.makeText(activity,"No internet connection",Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun searchJob() {

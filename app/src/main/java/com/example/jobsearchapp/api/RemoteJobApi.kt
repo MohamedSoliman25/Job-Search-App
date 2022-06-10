@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Query
 
 interface RemoteJobApi{
-    @GET("remote-jobs?limit=5")
+    @GET("remote-jobs")
     fun getRemoteJobResponse(): Call<RemoteJob>
 
     @GET("remote-jobs")
